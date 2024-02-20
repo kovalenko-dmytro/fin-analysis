@@ -1,0 +1,66 @@
+version: '3'
+services:
+  fa-database:
+    container_name: fa-database
+    image: postgres:16-alpine
+    hostname: ${DB_SERVER_HOST}
+    ports:
+      - "${DB_SERVER_EXTERNAL_PORT}:${DB_SERVER_INTERNAL_PORT}"
+    environment:
+      POSTGRES_USER: ${DB_SERVER_USERNAME}
+      POSTGRES_PASSWORD: ${DB_SERVER_PASSWORD}
+      POSTGRES_MULTIPLE_DATABASES: ${DB_SERVER_MULTIPLE_DATABASES}
+    healthcheck:
+      test: [ "CMD-SHELL", "sh -c 'pg_isready -U ${DB_SERVER_USERNAME}'" ]
+      timeout: 45s
+      interval: 10s
+      retries: 2
+    restart: always
+    volumes:
+      - "./db-init:/docker-entrypoint-initdb.d"
+      - "postgres_data:/data/postgres"
+      - "postgres_backup:/data/postgres/backup"
+    env_file: .env
+
+  fa-message-broker:
+    container_name: fa-message-broker
+    image: rabbitmq:3-management
+    hostname: ${MESSAGE_BROKER_HOST}
+    ports:
+      - "${MESSAGE_BROKER_EXTERNAL_PORT}:${MESSAGE_BROKER_INTERNAL_PORT}"
+      - "${MESSAGE_BROKER_UI_EXTERNAL_PORT}:${MESSAGE_BROKER_UI_INTERNAL_PORT}"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${MESSAGE_BROKER_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${MESSAGE_BROKER_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "${MESSAGE_BROKER_HOST}", "${MESSAGE_BROKER_EXTERNAL_PORT}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    env_file: .env
+
+  fa-backend-app:
+    container_name: fa-backend-app
+    image: fin-analysis-backend-application
+    build:
+      context: ../
+      dockerfile: /dev-tools/Dockerfile
+      args:
+        - "CONTAINER_DATASOURCE_URL"
+        - "DB_NAME"
+    ports:
+      - "8080:8080"
+    depends_on:
+      fa-database:
+        condition: service_healthy
+      fa-message-broker:
+        condition: service_started
+    env_file: .env
+
+volumes:
+  postgres_data:
+  postgres_backup:
+
+networks:
+  default:
+    driver: bridge

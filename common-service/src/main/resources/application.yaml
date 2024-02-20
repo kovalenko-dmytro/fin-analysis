@@ -1,0 +1,61 @@
+spring:
+  config:
+    import: optional:file:dev-tools/.env[.properties]
+  profiles:
+    active: ${APPLICATION_PROFILE}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  data:
+    web:
+      pageable:
+        one-indexed-parameters: true
+  liquibase:
+    change-log: classpath:db/db.changelog.xml
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  rabbitmq:
+    host: ${MESSAGE_BROKER_HOST}
+    port: ${MESSAGE_BROKER_EXTERNAL_PORT}
+    username: ${MESSAGE_BROKER_USERNAME}
+    password: ${MESSAGE_BROKER_PASSWORD}
+  mail:
+    protocol: smtp
+    host: smtp.gmail.com
+    port: 465
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    tls: true
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            required: true
+            enable: true
+          ssl:
+            enable: true
+            trust: smtp.gmail.com
+
+springdoc:
+  api-docs:
+    path: /api-docs
+
+application:
+  default-admin:
+    username: ${DEFAULT_ADMIN_USERNAME}
+    password: ${DEFAULT_ADMIN_PASSWORD}
+    email: ${DEFAULT_ADMIN_EMAIL}
+  jwt:
+    secret-key: ${JWT_SECRET_KEY}
+    expiration: ${JWT_EXPIRED}
+    refresh-expiration: ${JWT_REFRESH_EXPIRED}
+
+server:
+  servlet:
+    context-path: /${CONTEXT_PATH}
+  port: ${SERVER_PORT}
+  forward-headers-strategy: framework
